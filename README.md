@@ -1,71 +1,73 @@
-# My Go Backend Project
+# Devops Backend 
 
-This is a simple backend application built with Go. It serves as a starting point for building RESTful APIs and can be extended to meet various application requirements.
+This repository is a Backend project using golang and and use microservice architecture.
 
-## Project Structure
 
+## Project structure
 ```
-my-go-backend
-├── cmd
-│   └── main.go          # Entry point of the application
-├── pkg
-│   ├── handlers
-│   │   └── handler.go   # HTTP request handlers
-│   ├── models
-│   │   └── model.go     # Data structures and models
-│   └── routes
-│       └── routes.go    # Application routes
-├── .gitignore            # Git ignore file
-├── go.mod                # Go module dependencies
-└── README.md             # Project documentation
+DevOps-Backend/
+├── auth-service/
+│   ├── cmd/
+│   │   └── main.go                   # Entry point for Auth service
+│   ├── internal/
+│   │   ├── handlers/
+│   │   │   └── auth_handler.go       # Business logic for auth
+│   │   └── routes/
+│   │       └── router.go             # Sets up auth routes
+│   ├── go.mod
+│   └── go.sum
+│
+├── task-service/
+│   ├── cmd/
+│   │   └── main.go                   # Entry point for Task service
+│   ├── internal/
+│   │   ├── handlers/
+│   │   │   └── task_handler.go       # Business logic for tasks
+│   │   └── routes/
+│   │       └── router.go             # Sets up task routes
+│   ├── go.mod
+│   └── go.sum
+│
+├── user-service/
+│   ├── cmd/
+│   │   └── main.go                   # Entry point for User service
+│   ├── internal/
+│   │   ├── handlers/
+│   │   │   └── user_handler.go       # Business logic for user
+│   │   └── routes/
+│   │       └── router.go             # Sets up user routes
+│   ├── go.mod
+│   └── go.sum
+│
+├── proto/
+│   ├── auth-service/
+│   │   └── auth.proto                # Protobuf for auth
+│   ├── task-service/
+│   │   └── task.proto                # Protobuf for tasks
+│   └── user-service/
+│       └── user.proto                # Protobuf for users
+│
+├── docker-compose.yml               # Compose config to run services
+└── README.md                        # Project overview
 ```
 
-## Getting Started
+## Installation and run
+1. Clone the repository
 
-### Prerequisites
+2. Navigate to the project directory
 
-- Go 1.16 or later
-- Git
+3. Install golang
 
-### Installation
+Download link: [install golang](https://go.dev/doc/install)
 
-1. Clone the repository:
+4. Install dependencies:
+```
+go mod tidy
+```
 
-   ```
-   git clone https://github.com/yourusername/my-go-backend.git
-   ```
+5. Running the application
 
-2. Navigate to the project directory:
-
-   ```
-   cd my-go-backend
-   ```
-
-3. Install dependencies:
-
-   ```
-   go mod tidy
-   ```
-
-### Running the Application
-
-To run the application, execute the following command:
-
+Because this project using microservice architecture, if you want to run any services, you need to navigate at that service's folder and then using the below command
 ```
 go run cmd/main.go
 ```
-
-The server will start on `localhost:8080` by default.
-
-### API Endpoints
-
-- `GET /api/resource` - Description of the GET endpoint.
-- `POST /api/resource` - Description of the POST endpoint.
-
-### Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
-
-### License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
