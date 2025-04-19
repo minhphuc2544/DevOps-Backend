@@ -6,49 +6,49 @@ This repository is a Backend project using golang and and use microservice archi
 ## Project structure
 ```
 DevOps-Backend/
-├── auth-service/
-│   ├── cmd/
-│   │   └── main.go                   # Entry point for Auth service
-│   ├── internal/
-│   │   ├── handlers/
-│   │   │   └── auth_handler.go       # Business logic for auth
-│   │   └── routes/
-│   │       └── router.go             # Sets up auth routes
-│   ├── go.mod
-│   └── go.sum
+├── docker-compose.yml        # Defines multi-container Docker setup (services, ports, networks, volumes)
+├── README.md                 # Project documentation (how to run, build, use the system)
 │
-├── task-service/
-│   ├── cmd/
-│   │   └── main.go                   # Entry point for Task service
-│   ├── internal/
-│   │   ├── handlers/
-│   │   │   └── task_handler.go       # Business logic for tasks
-│   │   └── routes/
-│   │       └── router.go             # Sets up task routes
-│   ├── go.mod
-│   └── go.sum
-│
-├── user-service/
-│   ├── cmd/
-│   │   └── main.go                   # Entry point for User service
-│   ├── internal/
-│   │   ├── handlers/
-│   │   │   └── user_handler.go       # Business logic for user
-│   │   └── routes/
-│   │       └── router.go             # Sets up user routes
-│   ├── go.mod
-│   └── go.sum
-│
-├── proto/
-│   ├── auth-service/
-│   │   └── auth.proto                # Protobuf for auth
-│   ├── task-service/
-│   │   └── task.proto                # Protobuf for tasks
+├── proto/                    # gRPC/protobuf definitions shared across services
+│   ├── task-service/         
+│   │   └── task.proto        # gRPC service definition for task-related operations
 │   └── user-service/
-│       └── user.proto                # Protobuf for users
+│       └── user.proto        # gRPC service definition for user/auth operations
 │
-├── docker-compose.yml               # Compose config to run services
-└── README.md                        # Project overview
+├── task-service/             # Microservice handling task-related business logic
+│   ├── cmd/
+│   │   └── main.go           # Entry point for task-service (starts the HTTP/gRPC server)
+│   ├── internal/
+│   │   ├── handlers/
+│   │   │   └── task-handler.go  # Contains HTTP/gRPC handler functions (e.g. CreateTask, GetTasks)
+│   │   └── routes/
+│   │       └── router.go     # Registers routes and applies middleware (like a mini router)
+│   ├── go.mod                # Declares module name and dependencies for task-service
+│   └── go.sum                # Exact versions of all dependencies used in task-service
+│
+├── user-service/             # Folder for all user-related services
+│
+│   ├── auth/                 # Authentication service (JWT, login, registration)
+│   │   ├── cmd/
+│   │   │   └── main.go       # Entry point for auth-service
+│   │   ├── internal/
+│   │   │   ├── handlers/
+│   │   │   │   └── auth-handler.go  # (You may want this) Logic for login, signup, token gen/verify
+│   │   │   └── routes/
+│   │   │       └── router.go # Registers auth routes like /login, /register
+│   │   ├── go.mod            # Module definition for auth
+│   │   └── go.sum
+│
+│   └── user/                 # User profile service (e.g. user info, update profile)
+│       ├── cmd/
+│       │   └── main.go       # Entry point for user-service
+│       ├── internal/
+│       │   ├── handlers/
+│       │   │   └── user-handler.go  # Logic for user CRUD operations
+│       │   └── routes/
+│       │       └── router.go # Registers routes like /users, /users/:id
+│       ├── go.mod            # Module for user
+│       └── go.sum
 ```
 
 ## Installation and run
