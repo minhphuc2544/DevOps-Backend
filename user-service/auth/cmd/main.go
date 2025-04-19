@@ -3,7 +3,7 @@ package main
 import (
     "net/http"
     "log"
-	"github.com/minhphuc2544/DevOps-Backend/user-service/internal/handlers"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/auth/internal/handlers"
     "github.com/julienschmidt/httprouter"
 )
 

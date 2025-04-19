@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/julienschmidt/httprouter"
-	"github.com/minhphuc2544/DevOps-Backend/user-service/internal/handlers"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/handlers"
 )
 
 func SetupRoutes() *httprouter.Router {
