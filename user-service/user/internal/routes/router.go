@@ -1,16 +1,17 @@
 package routes
 
 import (
+	"database/sql"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/handlers"
 )
 
-func SetupRoutes() *httprouter.Router {
+func SetupRoutes(db *sql.DB) *httprouter.Router {
 	router := httprouter.New()
-
+	h := handlers.NewHandler(db)
 	// Define your routes here
-	router.GET("/", handlers.Index)
-	router.GET("/hello/:name", handlers.Hello)
+	router.POST("/users", h.CreateNewUser)
 
 	return router
 }
