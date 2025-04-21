@@ -11,7 +11,7 @@ services:
   #   build: ./task-service
   #   ports:
   #     - "8002:8080"
-  mysql:
+  mysql_db:
     image: mysql:8.0
     container_name: mysql_db
     restart: always
