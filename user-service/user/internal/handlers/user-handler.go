@@ -21,6 +21,7 @@ func NewHandler(db *gorm.DB) *Handler {
 type User struct {
 	ID int `json:"id"`
 	Username string `json:"username"`
+	Fullname string `json:"fullname"`
 	Email string `json:"email"`
 	Password string `json:"password"`
 	CreatedAt string `json:"created_at"`
@@ -40,19 +41,19 @@ func (h* Handler) CreateNewUser(w http.ResponseWriter, r *http.Request, _ httpro
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Lỗi hash mật khẩu", http.StatusInternalServerError)
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 	user.Password = string(hashedPassword)
 	if err := h.db.Create(&user).Error; err != nil {
-		http.Error(w, "Lỗi khi ghi dữ liệu", http.StatusInternalServerError)
+		http.Error(w, "Failed to write data into database", http.StatusInternalServerError)
 		return
 	}
 
 	id := user.ID
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Tạo người dùng thành công",
+		"message": "Sucessfully created user",
 		"id":      id,
 	})
 }
