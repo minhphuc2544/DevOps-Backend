@@ -4,12 +4,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/models"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/routes"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/utils"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -17,14 +17,10 @@ import (
 
 
 func main() {
-    cwd, err := os.Getwd()
+    envPath, err := utils.LoadEnv()
     if err != nil {
-        log.Fatalf("Failed to get current working directory: %v", err)
+        log.Fatalf("Error loading .env file: %v", err)
     }
-
-    // Construct the absolute path to the .env file
-    envPath := filepath.Join(cwd,"..","..", ".env") 
-    log.Printf("Attempting to load .env file from: %s", envPath)
 
     // Load the .env file
     err = godotenv.Load(envPath)

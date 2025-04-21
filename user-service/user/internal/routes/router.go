@@ -13,5 +13,6 @@ func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	// Define your routes here
 	router.POST("/users", h.CreateNewUser)
 	router.POST("/login", h.Login)
+	router.POST("/forgotpassword", h.ForgotPassword)
 	return router
 }
