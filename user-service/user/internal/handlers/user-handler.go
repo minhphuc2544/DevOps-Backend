@@ -1,20 +1,20 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{db: db}
 }
 
@@ -44,20 +44,12 @@ func (h* Handler) CreateNewUser(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 	user.Password = string(hashedPassword)
-	stmt, err := h.db.Prepare("INSERT INTO users (username, email, password, created_at) VALUES (?, ?, ?, ?)")
-	if err != nil {
-		http.Error(w, "Lỗi chuẩn bị câu lệnh", http.StatusInternalServerError)
-		return
-	}
-	defer stmt.Close()
-
-	res, err := stmt.Exec(user.Username, user.Email, user.Password, user.CreatedAt)
-	if err != nil {
+	if err := h.db.Create(&user).Error; err != nil {
 		http.Error(w, "Lỗi khi ghi dữ liệu", http.StatusInternalServerError)
 		return
 	}
 
-	id, _ := res.LastInsertId()
+	id := user.ID
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Tạo người dùng thành công",

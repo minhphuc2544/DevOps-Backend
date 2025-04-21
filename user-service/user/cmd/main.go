@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -9,7 +8,10 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/models"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/routes"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 
@@ -32,16 +34,14 @@ func main() {
     dsn := os.Getenv("MYSQL_USER") + ":" + os.Getenv("MYSQL_PASSWORD") + "@tcp(" + os.Getenv("MYSQL_HOST") + ":" + os.Getenv("MYSQL_PORT") + ")/" + os.Getenv("MYSQL_DATABASE")
 
     // Establish a database connection
-    db, err := sql.Open("mysql", dsn)
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
     if err != nil {
         log.Fatalf("Failed to connect to the database: %v", err)
     }
-    defer db.Close()
-
-    // Verify the connection
-    if err := db.Ping(); err != nil {
-        log.Fatalf("Failed to ping the database: %v", err)
-    }
+    err = db.AutoMigrate(&models.User{})
+	if err != nil {
+		log.Fatal("Migration failed: ", err)
+	}
     log.Println("Successfully connected to the database.")
 
     router := routes.SetupRoutes(db) // Setup the routes
