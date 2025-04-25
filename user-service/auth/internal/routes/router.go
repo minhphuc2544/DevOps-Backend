@@ -1,16 +1,18 @@
 package routes
 
 import (
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/auth/internal/handlers"
+	"gorm.io/gorm"
 )
 
-func SetupRoutes() *httprouter.Router {
+func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	router := httprouter.New()
-
+	h := handlers.NewHandler(db)
 	// Define your routes here
-	router.GET("/", handlers.Index)
-	router.GET("/hello/:name", handlers.Hello)
-
+	router.POST("/users", h.CreateNewUser)
+	router.POST("/login", h.Login)
+	router.POST("/forgotpassword", h.ForgotPassword)
 	return router
 }
