@@ -12,8 +12,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var jwtSecret = []byte("your-secret-key") // should load from env in production
-
 func ExtractToken(r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -23,7 +21,6 @@ func ExtractToken(r *http.Request) (string, error) {
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 		return "", errors.New("invalid Authorization format")
 	}
-	fmt.Print("Token: ", parts[1])
 	return parts[1], nil
 }
 

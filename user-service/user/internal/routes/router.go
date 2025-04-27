@@ -1,7 +1,6 @@
 package routes
 
 import (
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/handlers"
 	"gorm.io/gorm"
@@ -13,5 +12,6 @@ func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	// Define your routes here
 	router.GET("/users", h.GetAllUsers)
 	router.GET("/user", h.GetInfoByUsername)
+	router.POST("/updatepassword", h.UpdatePassword)
 	return router
 }
