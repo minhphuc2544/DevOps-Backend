@@ -1,20 +1,47 @@
 package main
 
 import (
-    "net/http"
-    "log"
-	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/handlers"
-    "github.com/julienschmidt/httprouter"
+	"log"
+	"net/http"
+	"os"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/models"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/routes"
+	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/utils"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 
 
 func main() {
-    router := httprouter.New()
-    router.GET("/", handlers.Index)
-	router.GET("/hello/:name", handlers.Hello)
+    envPath, err := utils.LoadEnv()
+    if err != nil {
+        log.Fatalf("Error loading .env file: %v", err)
+    }
 
-	log.Println("Starting server on :8080...")
-	// Start the server on port 8080
+    // Load the .env file
+    err = godotenv.Load(envPath)
+    if err != nil {
+        log.Fatalf("Error loading .env file from %s: %v", envPath, err)
+    }
+    dsn := os.Getenv("MYSQL_USER") + ":" + os.Getenv("MYSQL_PASSWORD") + "@tcp(" + os.Getenv("MYSQL_HOST") + ":" + os.Getenv("MYSQL_PORT") + ")/" + os.Getenv("MYSQL_DATABASE")
+
+    // Establish a database connection
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("Failed to connect to the database: %v", err)
+    }
+    err = db.AutoMigrate(&models.User{})
+	if err != nil {
+		log.Fatal("Migration failed: ", err)
+	}
+    log.Println("Successfully connected to the database.")
+
+    router := routes.SetupRoutes(db) // Setup the routes
+    log.Println("Starting server on :8080...")
+    // Start the server on port 8080
     log.Fatal(http.ListenAndServe(":8080", router))
 }

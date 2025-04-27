@@ -2,12 +2,13 @@
 package utils
 
 import (
+	"log"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
-
 )
 
 func HashPassword(password string) (string, error) {
@@ -28,7 +29,17 @@ func GenerateJWT(userID int, email string) (string, error) {
 		"email":   email,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 1 day expiration
 	}
-	LoadEnv()
+	envPath, err := LoadEnv()
+    if err != nil {
+        log.Fatalf("Error loading .env file: %v", err)
+    }
+
+    // Load the .env file
+    err = godotenv.Load(envPath)
+	if err != nil {
+		log.Fatalf("Error loading .env file from %s: %v", envPath, err)
+	}
+	
 	SecretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
