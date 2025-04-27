@@ -7,6 +7,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/minhphuc2544/DevOps-Backend/user-service/user/internal/utils"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -27,6 +28,10 @@ type User struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type changePassword struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
 
 func (h* Handler) GetAllUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Get all users from the database
@@ -85,5 +90,50 @@ func (h *Handler) GetInfoByUsername(w http.ResponseWriter, r *http.Request, _ ht
 		"fullname": user.Fullname,
 		"email":    user.Email,
 		"created_at": user.CreatedAt,
+	})
+}
+
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Parse the request body to get user details
+	claims, err := utils.VerifyJWT(r)
+	if err != nil {
+		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+	fmt.Println("Logged in user ID:", claims["user_id"])
+	
+	var user changePassword
+	// get the old and new password from the request body
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var dbUser User
+	// compare the old password with the hashed password in the database
+	if err := h.db.Where("id = ?", claims["user_id"]).First(&dbUser).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.OldPassword)); err != nil {
+		http.Error(w, "Wrong password", http.StatusUnauthorized)
+		return
+	}
+
+	// hash the new password and update it in the database
+	hashedPassword, err := utils.HashPassword(user.NewPassword)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.db.Model(&dbUser).Update("password", hashedPassword).Error; err != nil {
+		http.Error(w, "Failed to update password", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Password changed successfully",
 	})
 }
