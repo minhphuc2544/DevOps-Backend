@@ -36,9 +36,10 @@ type UserPlaylist struct {
 }
 
 type Playlist struct {
-	PlaylistID        uint      `json:"playlist_id"`
-	MusicID    uint      `json:"music_id"`
+	PlaylistID        int      `json:"playlist_id"`
+	MusicID    int      `json:"music_id"`
 }
+
 
 
 func (h* Handler) GetAllMusic(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -140,8 +141,8 @@ func (h* Handler) CreatePlaylist (w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	// Return a success response with the playlist ID
 	id := playlist.PlaylistID
-	// Return a success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -185,8 +186,8 @@ func (h* Handler) AddMusicToPlaylist (w http.ResponseWriter, r *http.Request, _ 
 
 	// Get the playlist ID and music ID from the request body
 	var data struct {
-		PlaylistID uint `json:"playlist_id"`
-		MusicID    uint `json:"music_id"`
+		PlaylistID int `json:"playlist_id"`
+		MusicID    int `json:"music_id"`
 	}
 	err = json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -200,8 +201,11 @@ func (h* Handler) AddMusicToPlaylist (w http.ResponseWriter, r *http.Request, _ 
 		return
 	}
 
-	// Add the music to the playlist in the database (this is a placeholder; you need to implement this logic)
-	err = h.db.Model(&Playlist{}).Where("playlist_id = ?", data.PlaylistID).Update("music_id", data.MusicID).Error
+	// Add the music to the playlist
+	err = h.db.Create(&Playlist{
+		PlaylistID: data.PlaylistID,
+		MusicID:    data.MusicID,
+	}).Error
 	if err != nil {
 		http.Error(w, "Failed to add music to playlist", http.StatusInternalServerError)
 		return
@@ -213,5 +217,39 @@ func (h* Handler) AddMusicToPlaylist (w http.ResponseWriter, r *http.Request, _ 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Music added to playlist successfully",
 	})
+}
+
+func (h *Handler) GetMusicByPlaylist(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	// Authenticate the user
+	claims, err := utils.VerifyJWT(r)
+	if err != nil {
+		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+	fmt.Println("Logged in user ID:", claims["user_id"])
+
+	// Get the playlist ID from the request parameters
+	var playlist Playlist
+	err = json.NewDecoder(r.Body).Decode(&playlist)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	playlistID := playlist.PlaylistID
+	// Get the music in the playlist from the database
+	var music []Music
+	if err := h.db.Table("playlists").Select("*").Joins("JOIN musics ON musics.id = playlists.music_id").Where("playlists.playlist_id = ?", playlistID).Find(&music).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Return the list of music as JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"music": music,
+		"count": len(music),
+		"message": "Get all music in playlist successfully",
+	})
+
 }
 

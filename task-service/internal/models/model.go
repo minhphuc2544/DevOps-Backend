@@ -20,6 +20,6 @@ type UserPlaylist struct {
 }
 
 type Playlist struct {
-	PlaylistID        uint      `gorm:"primaryKey"`
+	PlaylistID        uint      `gorm:"not null"`
 	MusicID    uint      `gorm:"not null"`
 }
