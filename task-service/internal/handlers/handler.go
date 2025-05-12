@@ -253,3 +253,46 @@ func (h *Handler) GetMusicByPlaylist(w http.ResponseWriter, r *http.Request, _ h
 
 }
 
+// incrementPlayCount increments the play count of a music item
+func (h *Handler) IncrementPlayCount(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	// Authenticate the user
+	claims, err := utils.VerifyJWT(r)
+	if err != nil {
+		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+	fmt.Println("Logged in user ID:", claims["user_id"])
+
+	// Get the music ID from the request body
+	var PlayCount struct {
+		MusicID int `json:"music_id"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&PlayCount)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	// Increment the play count in the database
+	err = h.db.Model(&Music{}).Where("id = ?", PlayCount.MusicID).Update("play_count", gorm.Expr("play_count + ?", 1)).Error
+	if err != nil {
+		return 
+	}
+
+	var count uint
+	err = h.db.Model(&Music{}).Where("id = ?", PlayCount.MusicID).Select("play_count").Scan(&count).Error
+	if err != nil {
+		http.Error(w, "Failed to get play count", http.StatusInternalServerError)
+		return
+	}
+
+	// Return a success response
+	w.Header().Set("Content-Type", "application/json")
+	
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Play count incremented successfully",
+		"music_id": PlayCount.MusicID,
+		"play_count": count,
+	})
+}

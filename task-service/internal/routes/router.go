@@ -16,5 +16,6 @@ func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	router.POST("/addMusicToPlaylist", h.AddMusicToPlaylist) // Add music to playlist
 	router.GET("/getUserPlaylist", h.GetUserPlayListByUserId) // Get playlist
 	router.GET("/getMusicInPlaylist", h.GetMusicByPlaylist) // Get music by playlist id
+	router.POST("/incrementPlayCount", h.IncrementPlayCount) // Increment play count
 	return router
 }
