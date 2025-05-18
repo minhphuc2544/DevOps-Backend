@@ -14,7 +14,20 @@ import (
 	"gorm.io/gorm"
 )
 
+func corsMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
+        if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
 
 func main() {
     envPath, err := utils.LoadEnv()
@@ -43,5 +56,5 @@ func main() {
     router := routes.SetupRoutes(db) // Setup the routes
     log.Println("Starting server on :8080...")
     // Start the server on port 8080
-    log.Fatal(http.ListenAndServe(":8080", router))
+    log.Fatal(http.ListenAndServe(":8080",  corsMiddleware(router)))
 }
