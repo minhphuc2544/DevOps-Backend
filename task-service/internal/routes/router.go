@@ -3,14 +3,19 @@ package routes
 import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/minhphuc2544/DevOps-Backend/task-service/internal/handlers"
+	"gorm.io/gorm"
 )
 
-func SetupRoutes() *httprouter.Router {
+func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	router := httprouter.New()
-
+	h := handlers.NewHandler(db)
 	// Define your routes here
-	router.GET("/", handlers.Index)
-	router.GET("/hello/:name", handlers.Hello)
-
+	router.GET("/getAllMusic", h.GetAllMusic) // Get all music
+	router.POST("/uploadMusic", h.UploadMusic) // Upload music
+	router.POST("/createPlaylist", h.CreatePlaylist) // Create playlist
+	router.POST("/addMusicToPlaylist", h.AddMusicToPlaylist) // Add music to playlist
+	router.GET("/getUserPlaylist", h.GetUserPlayListByUserId) // Get playlist
+	router.GET("/getMusicInPlaylist", h.GetMusicByPlaylist) // Get music by playlist id
+	router.POST("/incrementPlayCount", h.IncrementPlayCount) // Increment play count
 	return router
 }
