@@ -9,7 +9,7 @@ import (
 
 // return env file path
 func LoadEnv() (string, error) {
-	envFilePath := "../../.env"
+	envFilePath := ".env"
 	err := godotenv.Load(envFilePath)
 	if err != nil {
 		log.Fatalf("Error loading .env file")

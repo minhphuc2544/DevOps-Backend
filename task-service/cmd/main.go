@@ -54,7 +54,7 @@ func main() {
     log.Println("Successfully connected to the database.")
 
     router := routes.SetupRoutes(db) // Setup the routes
-    log.Println("Starting server on :8082...")
-    // Start the server on port 8082
-    log.Fatal(http.ListenAndServe(":8082", corsMiddleware(router)))
+    log.Println("Starting server on :8080...")
+    // Start the server on port 8080
+    log.Fatal(http.ListenAndServe(":8080", corsMiddleware(router)))
 }
