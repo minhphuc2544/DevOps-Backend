@@ -26,7 +26,7 @@ pipeline
         AWS_REGION  = "${params.AWS_REGION}"
         SNYK_TOKEN  = credentials('snyk')
         REPO_NAME   = "${params.REPO_DOCKER_USER}/muzique-${params.SERVICES}-service:${params.TAG}"
-        REPO_IMAGE  = "muzique-${params.SERVICES}-service:${params.TAG}"
+        REPO_IMAGE  = "muzique-${params.SERVICES}-service"
 
         CLUSTER_NAME  = "${params.CLUSTER_NAME}"
         SERVICE_NAME  = "${params.SERVICE_NAME}"
@@ -165,10 +165,10 @@ pipeline
 
                     dir(DIR_NAME)
                     {
-                        sh '''
+                        sh """
                             echo "Run contaienr test in jenkins: "
-                            docker run -d --name $REPO_IMAGE -p $port:8080 "$REPO_NAME"
-                        '''
+                            docker run -d --name ${REPO_IMAGE}  -p ${PORT}:8080 "${REPO_NAME}"
+                        """
                     }
                 }
                 
