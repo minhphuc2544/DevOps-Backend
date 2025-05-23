@@ -13,92 +13,134 @@ pipeline
         string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS REGION FOR ECR')
         string(name: 'REPO_DOCKER_USER', defaultValue: 'ribun', description: 'user Docker Hub')
         string(name: 'TAG', defaultValue: 'v1.0', description: 'Tag docker images ex(image:TAG)')
-        choice(name: 'SERVICES', choices: ['auth', 'user', 'task'], description: 'Choice service')
-
         string(name: 'CLUSTER_NAME', defaultValue: 'muzique-cluster', description: 'Name ECS cluster')
-        string(name: 'SERVICE_NAME', defaultValue: 'web-front-end-muzique', description: 'Name service on ECS')
-        string(name: 'TASK_DEF_NAME', defaultValue: 'task-definition-web-muzique', description: 'Name task definition ECS')
-
-        
     }
-
     environment {
         AWS_REGION  = "${params.AWS_REGION}"
         SNYK_TOKEN  = credentials('snyk')
-        REPO_NAME   = "${params.REPO_DOCKER_USER}/muzique-${params.SERVICES}-service:${params.TAG}"
-        REPO_IMAGE  = "muzique-${params.SERVICES}-service"
-
         CLUSTER_NAME  = "${params.CLUSTER_NAME}"
-        SERVICE_NAME  = "${params.SERVICE_NAME}"
-        TASK_DEF_NAME = "${params.TASK_DEF_NAME}"
-        DIR_NAME = ""
-        PORT =  ""
+        MYSQL_ROOT_PASSWORD = credentials('MYSQL_ROOT_PASSWORD')
+        MYSQL_DATABASE      = "muziquedevops"
+        MYSQL_USER          = "muzique"
+        MYSQL_PASSWORD      = credentials('MYSQL_PASSWORD')
+        MYSQL_HOST          = credentials('MYSQL_HOST')
+        MYSQL_PORT          = "3306"
+        SECRET_KEY          = credentials('SECRET_KEY')
     }
-
     stages {
         stage('Git Checkout') {
             steps {
                 git branch: 'deploy', url: 'https://github.com/minhphuc2544/Muzique-Backend.git'
             }
         }
+        stage('Check services') {
+            steps {
+                script {
+                    def changedFiles = sh(script: "git diff --name-only $GIT_PREVIOUS_COMMIT $GIT_COMMIT", returnStdout: true).trim().split("\n")
 
-        // stage('Analys code - SonarQube') {
-        //     environment {
-        //         SCANNER_HOME = tool 'sonar-scanner'
-        //     }
-        //     steps {
-        //         withSonarQubeEnv('sonar-server') {
-        //         sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Muzique_Frontend \
-        //             -Dsonar.projectKey=Muzique-fe
-        //         '''
-        //         }
-        //     }
-        // }
-        // stage('QUALITY GATE') {
-        //     steps {
-        //         script {
-        //             waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
-        //         }
-        //     }
-        // }
-        // stage('Snyk Test - App (npm)') {
-        //     steps {
-        //         sh '''
-        //             snyk auth $SNYK_TOKEN
-        //             snyk test --all-project --severity-threshold=medium --json > ./reports/snyk-report.json || true
-        //         '''
-        //     }
-        // }
-        // stage('Snyk Monitor') {
-        //     steps {
-        //         sh 'snyk monitor --all-project'
-        //     }
-        // }
-        // stage('OWASP FS SCAN') {
-        //     steps {
-        //             dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
-        //             dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-        //         }
-        //     }
-        // }
-        // stage('Trivy FS scan') {
-        //     steps {
-        //             sh "trivy fs . > trivyfs.json || true"
-        //     }
-        // }
+                    def detectServices = ""
+                    if (changedFiles.any { it.startsWith("user-service/auth/")}) {
+                        detectServices = "auth"
+                    } else if (changedFiles.any { it.startsWith("user-service/user/")}) {
+                        detectServices = "user"
+                    } else if (changedFiles.any { it.startsWith("task-service/")}) {
+                        detectServices = "task"
+                    }
+                    if ( detectServices == "") {
+                        error("Cannot find services need to update!")
+                    }
+                    env.SERVICES = detectServices
+                }
+            }
+        }
+        stage('Setup ENV') {
+            steps {
+                script {
+                    def serviceNameMap = [
+                        'auth' : 'auth-service-service',
+                        'user' : 'user-service-service',
+                        'task' : 'task-service-service'
+                    ]
+                    def taskDefMap = [
+                        'auth' : 'auth-service',
+                        'user' : 'user-service',
+                        'task' : 'user-service'
+                    ]
+                    def serviceMap = [
+                            'auth' : 'user-service/auth', 
+                            'user' : 'user-service/user',
+                            'task' :  'task-service/'
+                    ]
+                    def portMap = [
+                            'auth' : 8000,
+                            'user' : 8000,
+                            'task' : 8000
+                    ]
+                    env.SERVICE_NAME = serviceNameMap[env.SERVICES]
+                    env.TASK_DEF_NAME = taskDefMap[env.SERVICES]
+                    env.DIR_NAME = serviceMap[env.SERVICES]
+                    env.PORT = portMap[env.SERVICES]
+                    env.REPO_IMAGE = "muzique-${env.SERVICES}-service"
+                    env.REPO_NAME = "${params.REPO_DOCKER_USER}/muzique-${env.SERVICES}-service:${params.TAG}"
+                }
+            }
+        }
+        stage('Analys code - SonarQube') {
+            environment {
+                SCANNER_HOME = tool 'sonar-scanner'
+            }
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Muzique_Frontend \
+                    -Dsonar.projectKey=Muzique-fe
+                '''
+                }
+            }
+        }
+        stage('QUALITY GATE') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+        stage('Snyk Test - App (npm)') {
+            steps {
+                dir(env.DIR_NAME) {
+                    sh '''
+                        snyk auth $SNYK_TOKEN
+                        snyk test --all-project --severity-threshold=medium --json > ./reports/snyk-report.json || true
+                    '''
+                }
+            }
+        }
+        stage('Snyk Monitor') {
+            steps {
+                dir(env.DIR_NAME) {
+                    sh 'snyk monitor --all-project'
+                }
+            }
+        }
+        stage('OWASP FS SCAN') {
+            steps {
+                dir(env.DIR_NAME) {
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
+        stage('Trivy FS scan') {
+            steps {
+                dir(env.DIR_NAME) {
+                    sh "trivy fs . > trivyfs.json || true"
+                }
+            }
+        }
         stage('Docker Build'){
             steps {
                 script {
-                    def serviceMap = [
-                        'auth' : 'user-service/auth', 
-                        'user' : 'user-service/user',
-                        'task' :  'task-service'
-                    ]
-                    def DIR_NAME = serviceMap[params.SERVICES]
-
-
-                    withDockerRegistry([credentialsId: 'docker', url: 'https://index.docker.io/v1/']) {  
-                        dir(DIR_NAME) {
+                    withDockerRegistry([credentialsId: 'docker', url: 'https://index.docker.io/v1/']) {
+                        dir(env.DIR_NAME) {
                             sh '''
                                 docker build -t $REPO_IMAGE .
                                 docker tag $REPO_IMAGE $REPO_NAME
@@ -110,32 +152,25 @@ pipeline
                 }
             }
         }
-        // stage('Trivy scan image') {
-        //     steps {
-        //         sh '''
-        //             trivy image $REPO_IMAGE > trivy.json
-        //         '''
-        //     }
-        // }
-        // stage('Snyk scan image') {
-        //     steps {
-        //         sh '''
-        //             snyk container test $REPO_NAME
-        //             snyk container monitor $REPO_NAME
-        //         '''
-        //     }
-        // }
+        stage('Trivy scan image') {
+            steps {
+                sh '''
+                    trivy image $REPO_IMAGE > trivy.json
+                '''
+            }
+        }
+        stage('Snyk scan image') {
+            steps {
+                sh '''
+                    snyk container test $REPO_NAME
+                    snyk container monitor $REPO_NAME
+                '''
+            }
+        }
         stage('Remove container') {
             steps {
                 script {
-                    def serviceMap = [
-                        'auth' : 'user-service/auth', 
-                        'user' : 'user-service/user',
-                        'task' :  'task-service'
-                    ]
-                    def DIR_NAME = serviceMap[params.SERVICES]
-
-                    dir(DIR_NAME)
+                    dir(env.DIR_NAME)
                     {
                         sh '''
                             docker stop $REPO_IMAGE | true
@@ -148,108 +183,77 @@ pipeline
         stage('Run container') {
             steps {
                 script {
-                    def serviceMap = [
-                        'auth' : 'user-service/auth', 
-                        'user' : 'user-service/user',
-                        'task' :  'task-service'
-                    ]
-                    def DIR_NAME = serviceMap[params.SERVICES]
-
-                    def portMap = [
-                        'auth' : 8000,
-                        'user' : 8000,
-                        'task' : 8000
-                    ]
-                    
-                    def PORT = portMap[params.SERVICES]
-
-                    dir(DIR_NAME)
+                    dir(env.DIR_NAME)
                     {
                         sh """
                             echo "Run contaienr test in jenkins: "
-                            docker run -d --name ${REPO_IMAGE}  -p ${PORT}:8080 "${REPO_NAME}"
+                            docker run -d --name $REPO_IMAGE  -p ${env.PORT}:8080 "$REPO_NAME"
                         """
                     }
                 }
-                
             }
         }
-        // stage('Deploy to DEV') {
-        //     when {
-        //         expression { params.ENVIRONMENT == 'dev' }
-        //     }
-        //     steps {
-        //         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']]) {
-        //             sh '''
-        //                 echo "Deploying to development: "
-        //                 aws ecs describe-task-definition \
-        //                 --task-definition $TASK_DEF_NAME \
-        //                 --query 'taskDefinition' > task-def.json
+        stage('Deploy to DEV') {
+            when {
+                expression { params.ENVIRONMENT == 'dev' }
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']]) {
+                    sh '''
+                        echo "Deploying to development..."
 
-        //                 jq --arg img "$REPO_NAME" '
-        //                 {
-        //                     family: .family,
-        //                     networkMode: .networkMode,
-        //                     containerDefinitions: (
-        //                         .containerDefinitions | map(
-        //                             .image = $img
-        //                         )
-        //                     ),
-        //                     requiresCompatibilities: .requiresCompatibilities,
-        //                     cpu: .cpu,
-        //                     memory: .memory,
-        //                     executionRoleArn: .executionRoleArn,
-        //                     taskRoleArn: .taskRoleArn
-        //                 }' task-def.json > new-task-def.json
-                
-        //                 aws ecs update-service \
-        //                     --cluster $CLUSTER_NAME \
-        //                     --service $SERVICE_NAME \
-        //                     --force-new-deployment
-                        
-        //                 echo "Done"
-        //             '''
-        //         }
-        //     }
-        // }
-        // stage('Deploy to PROD') {
-        //     when {
-        //         expression {params.ENVIRONMENT == 'prod'}
-        //     }
-        //     steps {
-        //         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']]) {
-        //             sh '''
-        //                 echo "Deploying to production: "
-        //                 aws ecs describe-task-definition \
-        //                 --task-definition $TASK_DEF_NAME \
-        //                 --query 'taskDefinition' > task-def.json
-                    
+                        aws ecs describe-task-definition \
+                            --task-definition $TASK_DEF_NAME \
+                            --query 'taskDefinition' > task-def.json
 
-        //                 jq --arg img "$REPO_NAME" '
-        //                 {
-        //                     family: .family,
-        //                     networkMode: .networkMode,
-        //                     containerDefinitions: (
-        //                         .containerDefinitions | map(
-        //                             .image = $img
-        //                         )
-        //                     ),
-        //                     requiresCompatibilities: .requiresCompatibilities,
-        //                     cpu: .cpu,
-        //                     memory: .memory,
-        //                     executionRoleArn: .executionRoleArn,
-        //                     taskRoleArn: .taskRoleArn
-        //                 }' task-def.json > new-task-def.json
-                
-        //                 aws ecs update-service \
-        //                     --cluster $CLUSTER_NAME \
-        //                     --service $SERVICE_NAME \
-        //                     --force-new-deployment
-                        
-        //                 echo "Done"
-        //             '''
-        //         }
-        //     }
-        // }
+                        # Cập nhật image bằng jq
+                        jq --arg IMAGE "$REPO_NAME" \
+                            --arg NAME "$REPO_IMAGE" \
+                            '
+                            .containerDefinitions |= map(
+                                if .name == $NAME then .image = $IMAGE else . end
+                            )
+                            | {
+                                family,
+                                containerDefinitions,
+                                executionRoleArn: (if (.executionRoleArn? | type == "string") then .executionRoleArn else empty end),
+                                taskRoleArn: (if (.taskRoleArn? | type == "string") then .taskRoleArn else empty end),
+                                networkMode: (if (.networkMode? | type == "string") then .networkMode else empty end),
+                                requiresCompatibilities: (if (.requiresCompatibilities? | type == "array") then .requiresCompatibilities else empty end),
+                                cpu: (if (.cpu? | type == "string") then .cpu else empty end),
+                                memory: (if (.memory? | type == "string") then .memory else empty end)
+                            }
+                            ' task-def.json > new-task-def.json
+
+
+                        # Đăng ký revision mới
+                        aws ecs register-task-definition --cli-input-json file://new-task-def.json > register-task.json
+
+                        # Triển khai revision mới
+                        NEW_REVISION=$(jq -r '.taskDefinition.revision' register-task.json)
+
+                        aws ecs update-service \
+                            --cluster $CLUSTER_NAME \
+                            --service $SERVICE_NAME \
+                            --task-definition $TASK_DEF_NAME:$NEW_REVISION
+
+                        echo "Đã triển khai revision $NEW_REVISION cho service $SERVICE_NAME"
+                    '''
+                }
+            }
+        }
+        stage('Deploy to PROD') {
+            when {
+                expression {params.ENVIRONMENT == 'prod'}
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-key']]) {
+                    sh """
+                        echo "Deploying to production..."
+
+                    """
+                }
+            }
+        }
     }
 }
