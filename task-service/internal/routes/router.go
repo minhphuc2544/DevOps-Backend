@@ -10,12 +10,12 @@ func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	router := httprouter.New()
 	h := handlers.NewHandler(db)
 	// Define your routes here
-	router.GET("/getAllMusic", h.GetAllMusic) // Get all music
-	router.POST("/uploadMusic", h.UploadMusic) // Upload music
-	router.POST("/createPlaylist", h.CreatePlaylist) // Create playlist
-	router.POST("/addMusicToPlaylist", h.AddMusicToPlaylist) // Add music to playlist
-	router.GET("/getUserPlaylist", h.GetUserPlayListByUserId) // Get playlist
-	router.GET("/getMusicInPlaylist", h.GetMusicByPlaylist) // Get music by playlist id
-	router.POST("/incrementPlayCount", h.IncrementPlayCount) // Increment play count
+	router.GET("/task/getAllMusic", h.GetAllMusic) // Get all music
+	router.POST("/task/uploadMusic", h.UploadMusic) // Upload music
+	router.POST("/task/createPlaylist", h.CreatePlaylist) // Create playlist
+	router.POST("/task/addMusicToPlaylist", h.AddMusicToPlaylist) // Add music to playlist
+	router.GET("/task/getUserPlaylist", h.GetUserPlayListByUserId) // Get playlist
+	router.GET("/task/getMusicInPlaylist", h.GetMusicByPlaylist) // Get music by playlist id
+	router.POST("/task/incrementPlayCount", h.IncrementPlayCount) // Increment play count
 	return router
 }
