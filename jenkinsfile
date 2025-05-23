@@ -171,6 +171,7 @@ pipeline
             steps {
                 script {
                     dir(env.DIR_NAME)
+                    dir(env.DIR_NAME)
                     {
                         sh '''
                             docker stop $REPO_IMAGE | true
@@ -184,9 +185,11 @@ pipeline
             steps {
                 script {
                     dir(env.DIR_NAME)
+                    dir(env.DIR_NAME)
                     {
                         sh """
                             echo "Run contaienr test in jenkins: "
+                            docker run -d --name $REPO_IMAGE  -p ${env.PORT}:8080 "$REPO_NAME"
                             docker run -d --name $REPO_IMAGE  -p ${env.PORT}:8080 "$REPO_NAME"
                         """
                     }
