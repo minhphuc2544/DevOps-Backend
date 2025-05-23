@@ -10,8 +10,8 @@ func SetupRoutes(db *gorm.DB) *httprouter.Router {
 	router := httprouter.New()
 	h := handlers.NewHandler(db)
 	// Define your routes here
-	router.GET("/users", h.GetAllUsers)
-	router.POST("/user", h.GetInfoByUsername)
-	router.POST("/updatepassword", h.UpdatePassword)
+	router.GET("/user/all", h.GetAllUsers)
+	router.POST("/user/me", h.GetInfoByUsername)
+	router.POST("/user/updatepassword", h.UpdatePassword)
 	return router
 }
